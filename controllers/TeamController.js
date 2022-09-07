@@ -1,39 +1,11 @@
-const Team = require("../models/Team");
-const { Points } = require("../utils/constants");
+const { Team } = require("../models/Team");
+const { POINTS, NUMBER_OF_TEAMS_PER_GROUP } = require("../utils/constants");
+const { updateGroupStandings, addGroup } = require("./GroupController");
 
 // Get all teams info
 const getAllTeams = async (req, res) => {
   const teams = await Team.find();
   return res.status(200).json(teams);
-};
-
-// Get group standings
-const getGroupStandings = async (req, res) => {
-  const teams = await Team.find().sort({
-    groupNo: 1,
-    points: -1,
-    goals: -1,
-    alternatePoints: -1,
-    registrationDate: 1,
-  });
-
-  const standings = [];
-
-  if (teams && teams.length > 0) {
-    let startInd = 0;
-    let groupNo = teams[0].groupNo;
-
-    for (let i in teams) {
-      if (teams[i].groupNo !== groupNo) {
-        standings.push(teams.slice(startInd, i));
-        startInd = i;
-        groupNo = teams[i].groupNo;
-      }
-    }
-    standings.push(teams.slice(startInd));
-  }
-
-  return res.status(200).json(standings);
 };
 
 // Add team info
@@ -48,8 +20,21 @@ const addTeam = async (req, res) => {
     return res.status(400).send(`${req.body.name} already exists`);
   }
 
+  const group = await addGroup(req.body.groupNo);
+  if (!group) {
+    return res.status(400).send("No more groups can be added");
+  }
+
+  if (group.teams.length >= NUMBER_OF_TEAMS_PER_GROUP) {
+    return res.status(400).send(`Group ${req.body.groupNo} is already full`);
+  }
+
   const newTeam = new Team({ ...req.body });
   const addedTeam = await newTeam.save();
+
+  // add team to group and update standings
+  await updateGroupStandings(group.number, addedTeam);
+
   return res.status(200).json(addedTeam);
 };
 
@@ -58,15 +43,17 @@ const addTeam = async (req, res) => {
 //   team: mongoose model of team
 const updateTeamPoints = async (team) => {
   team.points =
-    team.wins * Points.WIN_POINTS +
-    team.losses * Points.LOSE_POINTS +
-    team.draws * Points.DRAW_POINTS;
+    team.wins * POINTS.WIN_POINTS +
+    team.losses * POINTS.LOSE_POINTS +
+    team.draws * POINTS.DRAW_POINTS;
   team.alternatePoints =
-    team.wins * Points.WIN_ALT_POINTS +
-    team.losses * Points.LOSE_ALT_POINTS +
-    team.draws * Points.DRAW_ALT_POINTS;
+    team.wins * POINTS.WIN_ALT_POINTS +
+    team.losses * POINTS.LOSE_ALT_POINTS +
+    team.draws * POINTS.DRAW_ALT_POINTS;
 
   const updatedTeam = await team.save();
+  await updateGroupStandings(updatedTeam.groupNo, updatedTeam);
+
   return updatedTeam;
 };
 
@@ -96,35 +83,28 @@ const addMatch = async (req, res) => {
   if (team1Goals > team2Goals) {
     firstTeam.wins += 1;
     secondTeam.losses += 1;
-
-    firstTeam.points += 3;
-    firstTeam.alternatePoints += 5;
   } else if (team2Goals > team1Goals) {
     secondTeam.wins += 1;
     firstTeam.losses += 1;
-
-    secondTeam.points += 3;
-    secondTeam.alternatePoints += 5;
   } else {
     firstTeam.draws += 1;
     secondTeam.draws += 1;
-
-    firstTeam.points += 1;
-    firstTeam.alternatePoints += 3;
-
-    secondTeam.points += 1;
-    secondTeam.alternatePoints += 3;
   }
 
-  const updatedFirstTeam = await updateTeamPoints(firstTeam);
-  const updatedSecondTeam = await updateTeamPoints(secondTeam);
+  const savedFirstTeam = await firstTeam.save();
+  const savedSecondTeam = await secondTeam.save();
+
+  const updatedFirstTeam = await updateTeamPoints(savedFirstTeam);
+  const updatedSecondTeam = await updateTeamPoints(savedSecondTeam);
 
   return res.status(200).json([updatedFirstTeam, updatedSecondTeam]);
 };
 
+const clearTeams = () => Team.deleteMany({});
+
 module.exports = {
   getAllTeams,
-  getGroupStandings,
   addTeam,
   addMatch,
+  clearTeams,
 };

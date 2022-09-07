@@ -1,4 +1,4 @@
-const Points = {
+const POINTS = {
   WIN_POINTS: 3,
   LOSE_POINTS: 0,
   DRAW_POINTS: 1,
@@ -7,6 +7,11 @@ const Points = {
   DRAW_ALT_POINTS: 3,
 };
 
+const NUMBER_OF_TEAMS_PER_GROUP = 6;
+const NUMBER_OF_GROUPS = 2;
+
 module.exports = {
-  Points,
+  POINTS,
+  NUMBER_OF_TEAMS_PER_GROUP,
+  NUMBER_OF_GROUPS,
 };

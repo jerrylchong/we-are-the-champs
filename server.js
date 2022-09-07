@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 require("dotenv").config({ silent: true });
 
 const TeamController = require("./controllers/TeamController");
+const GroupController = require("./controllers/GroupController");
 
 const app = express();
 const PORT = 5000;
@@ -10,7 +11,7 @@ const PORT = 5000;
 app.use(express.json());
 
 app.get("/teams", TeamController.getAllTeams);
-app.get("/standings", TeamController.getGroupStandings);
+app.get("/groups", GroupController.getGroups);
 
 app.post("/teams", TeamController.addTeam);
 
