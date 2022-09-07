@@ -1,1 +1,1 @@
-# we-ate-the-champs
+# we-are-the-champs
