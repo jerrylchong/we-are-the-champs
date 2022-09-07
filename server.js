@@ -2,19 +2,19 @@ const express = require("express");
 const mongoose = require("mongoose");
 require("dotenv").config({ silent: true });
 
-const controller = require("./controller");
+const TeamController = require("./controllers/TeamController");
 
 const app = express();
 const PORT = 5000;
 
 app.use(express.json());
 
-app.get("/teams", controller.getAllTeams);
-app.get("/standings", controller.getGroupStandings);
+app.get("/teams", TeamController.getAllTeams);
+app.get("/standings", TeamController.getGroupStandings);
 
-app.post("/teams", controller.addTeam);
+app.post("/teams", TeamController.addTeam);
 
-app.put("/match", controller.addMatch);
+app.put("/match", TeamController.addMatch);
 
 mongoose
   .connect(

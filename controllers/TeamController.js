@@ -1,4 +1,5 @@
-const { Team } = require("./models");
+const Team = require("../models/Team");
+const { Points } = require("../utils/constants");
 
 // Get all teams info
 const getAllTeams = async (req, res) => {
@@ -52,6 +53,23 @@ const addTeam = async (req, res) => {
   return res.status(200).json(addedTeam);
 };
 
+// helper function to recalculate and update team points
+// @Params:
+//   team: mongoose model of team
+const updateTeamPoints = async (team) => {
+  team.points =
+    team.wins * Points.WIN_POINTS +
+    team.losses * Points.LOSE_POINTS +
+    team.draws * Points.DRAW_POINTS;
+  team.alternatePoints =
+    team.wins * Points.WIN_ALT_POINTS +
+    team.losses * Points.LOSE_ALT_POINTS +
+    team.draws * Points.DRAW_ALT_POINTS;
+
+  const updatedTeam = await team.save();
+  return updatedTeam;
+};
+
 // Add match info
 // body: {
 //   team1: string;
@@ -98,8 +116,8 @@ const addMatch = async (req, res) => {
     secondTeam.alternatePoints += 3;
   }
 
-  const updatedFirstTeam = await firstTeam.save();
-  const updatedSecondTeam = await secondTeam.save();
+  const updatedFirstTeam = await updateTeamPoints(firstTeam);
+  const updatedSecondTeam = await updateTeamPoints(secondTeam);
 
   return res.status(200).json([updatedFirstTeam, updatedSecondTeam]);
 };
