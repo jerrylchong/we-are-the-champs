@@ -9,9 +9,11 @@ const POINTS = {
 
 const NUMBER_OF_TEAMS_PER_GROUP = 6;
 const NUMBER_OF_GROUPS = 2;
+const NUMBER_OF_MATCHES = 30;
 
 module.exports = {
   POINTS,
   NUMBER_OF_TEAMS_PER_GROUP,
   NUMBER_OF_GROUPS,
+  NUMBER_OF_MATCHES,
 };

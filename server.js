@@ -15,7 +15,7 @@ app.get("/groups", GroupController.getGroups);
 
 app.post("/teams", TeamController.addTeams);
 
-app.put("/match", TeamController.addMatch);
+app.put("/match", TeamController.addMatches);
 
 app.delete("", async (req, res) => {
   await TeamController.clearTeams();

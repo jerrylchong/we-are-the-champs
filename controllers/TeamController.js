@@ -4,6 +4,7 @@ const {
   POINTS,
   NUMBER_OF_TEAMS_PER_GROUP,
   NUMBER_OF_GROUPS,
+  NUMBER_OF_MATCHES,
 } = require("../utils/constants");
 const { updateGroupStandings, addGroup } = require("./GroupController");
 
@@ -100,22 +101,12 @@ const updateTeamPoints = async (team) => {
 };
 
 // Add match info
-// body: {
-//   team1: string;
-//   team2: string;
-//   team1Goals: number;
-//   team2Goals: number;
-// }
-const addMatch = async (req, res) => {
-  const { team1, team2, team1Goals, team2Goals } = req.body;
-
+// @Params
+// match: match to be added
+const addMatch = async (match) => {
+  const { team1, team2, team1Goals, team2Goals } = match;
   const firstTeam = await Team.findOne({ name: team1 });
   const secondTeam = await Team.findOne({ name: team2 });
-
-  // only teams in the same group play each other
-  if (firstTeam.groupNo !== secondTeam.groupNo) {
-    return res.status(400).send("Teams are in different groups");
-  }
 
   // update teams' total goals
   firstTeam.goals += team1Goals;
@@ -136,10 +127,78 @@ const addMatch = async (req, res) => {
   const savedFirstTeam = await firstTeam.save();
   const savedSecondTeam = await secondTeam.save();
 
-  const updatedFirstTeam = await updateTeamPoints(savedFirstTeam);
-  const updatedSecondTeam = await updateTeamPoints(savedSecondTeam);
+  await updateTeamPoints(savedFirstTeam);
+  await updateTeamPoints(savedSecondTeam);
+};
 
-  return res.status(200).json([updatedFirstTeam, updatedSecondTeam]);
+// Add matches
+// body: {
+//   matches: {
+//     team1: string;
+//     team2: string;
+//     team1Goals: number;
+//     team2Goals: number;
+//   }[];
+// }
+const addMatches = async (req, res) => {
+  const { matches } = req.body;
+  if (!matches) {
+    return res.status(400).send("No matches provided");
+  }
+
+  // check if there are correct number of matches
+  if (matches.length !== NUMBER_OF_MATCHES) {
+    return res.status(400).send(`There must be ${NUMBER_OF_MATCHES} matches`);
+  }
+
+  const teamPairings = new Map();
+  for (const match of matches) {
+    const firstTeam = await Team.findOne({ name: match.team1 });
+    const secondTeam = await Team.findOne({ name: match.team2 });
+
+    // check if both teams exist
+    if (!firstTeam) {
+      return res.status(404).send(`Team ${team1} not found`);
+    }
+
+    if (!secondTeam) {
+      return res.status(404).send(`Team ${team2} not found`);
+    }
+
+    // only teams in the same group play each other
+    if (firstTeam.groupNo !== secondTeam.groupNo) {
+      return res.status(400).send("Teams are in different groups");
+    }
+
+    // check if teams have played each other before
+    // using a concatenated string of their names as key
+    if (match.team1 < match.team2) {
+      if (teamPairings.has(match.team1 + match.team2)) {
+        return res.status(400).send("Teams can only play each other once");
+      }
+      teamPairings.set(match.team1 + match.team2, 1);
+    } else if (match.team2 < match.team1) {
+      if (teamPairings.has(match.team2 + match.team1)) {
+        return res.status(400).send("Teams can only play each other once");
+      }
+      teamPairings.set(match.team2 + match.team1, 1);
+    } else {
+      // team1 is team2
+      return res.status(400).send("A team cannot play against themselves");
+    }
+
+    // check if goals are negative
+    if (match.team1Goals < 0 || match.team2Goals < 0) {
+      return res.status(400).send("Goals cannot be a negative number");
+    }
+  }
+
+  for (const match of matches) {
+    await addMatch(match);
+  }
+
+  const groups = await Group.find();
+  return res.status(200).json(groups);
 };
 
 const clearTeams = () => Team.deleteMany({});
@@ -147,6 +206,6 @@ const clearTeams = () => Team.deleteMany({});
 module.exports = {
   getAllTeams,
   addTeams,
-  addMatch,
+  addMatches,
   clearTeams,
 };
