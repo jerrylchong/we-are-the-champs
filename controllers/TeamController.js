@@ -34,10 +34,11 @@ const addTeam = async (team) => {
 //   }[];
 // }
 const addTeams = async (req, res) => {
-  const { teams } = req.body;
-  if (!teams) {
+  if (!req || !req.body || !req.body.teams) {
     return res.status(400).send("No teams provided");
   }
+
+  const { teams } = req.body;
 
   const teamNames = new Map();
   const groupNumbers = new Map();
@@ -142,7 +143,7 @@ const addMatch = async (match) => {
 // }
 const addMatches = async (req, res) => {
   const { matches } = req.body;
-  if (!matches) {
+  if (!req || !req.body || !req.body.matches) {
     return res.status(400).send("No matches provided");
   }
 

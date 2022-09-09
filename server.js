@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const mongoose = require("mongoose");
 require("dotenv").config({ silent: true });
 
@@ -9,6 +10,7 @@ const app = express();
 const PORT = 5000;
 
 app.use(express.json());
+app.use(cors());
 
 app.get("/teams", TeamController.getAllTeams);
 app.get("/groups", GroupController.getGroups);
@@ -20,7 +22,7 @@ app.put("/match", TeamController.addMatches);
 app.delete("", async (req, res) => {
   await TeamController.clearTeams();
   await GroupController.clearGroups();
-  return res.status(200).send("Groups and teams deleted");
+  return res.status(200).json("Groups and teams deleted");
 });
 
 mongoose
