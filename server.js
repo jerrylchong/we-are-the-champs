@@ -13,9 +13,15 @@ app.use(express.json());
 app.get("/teams", TeamController.getAllTeams);
 app.get("/groups", GroupController.getGroups);
 
-app.post("/teams", TeamController.addTeam);
+app.post("/teams", TeamController.addTeams);
 
 app.put("/match", TeamController.addMatch);
+
+app.delete("", async (req, res) => {
+  await TeamController.clearTeams();
+  await GroupController.clearGroups();
+  return res.status(200).send("Groups and teams deleted");
+});
 
 mongoose
   .connect(

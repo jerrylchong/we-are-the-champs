@@ -1,5 +1,10 @@
+const { Group } = require("../models/Group");
 const { Team } = require("../models/Team");
-const { POINTS, NUMBER_OF_TEAMS_PER_GROUP } = require("../utils/constants");
+const {
+  POINTS,
+  NUMBER_OF_TEAMS_PER_GROUP,
+  NUMBER_OF_GROUPS,
+} = require("../utils/constants");
 const { updateGroupStandings, addGroup } = require("./GroupController");
 
 // Get all teams info
@@ -9,33 +14,70 @@ const getAllTeams = async (req, res) => {
 };
 
 // Add team info
-// body: {
-//   name: string;
-//   registrationDate: date;
-//   groupNo: number;
-// }
-const addTeam = async (req, res) => {
-  const existing = await Team.findOne({ name: req.body.name });
-  if (existing) {
-    return res.status(400).send(`${req.body.name} already exists`);
-  }
-
-  const group = await addGroup(req.body.groupNo);
-  if (!group) {
-    return res.status(400).send("No more groups can be added");
-  }
-
-  if (group.teams.length >= NUMBER_OF_TEAMS_PER_GROUP) {
-    return res.status(400).send(`Group ${req.body.groupNo} is already full`);
-  }
-
-  const newTeam = new Team({ ...req.body });
+// @Params
+// team: team to be added
+const addTeam = async (team) => {
+  const newTeam = new Team({ ...team });
   const addedTeam = await newTeam.save();
 
   // add team to group and update standings
-  await updateGroupStandings(group.number, addedTeam);
+  await updateGroupStandings(team.groupNo, addedTeam);
+};
 
-  return res.status(200).json(addedTeam);
+// Add teams
+// body: {
+//   teams: {
+//     name: string;
+//     registrationDate: date;
+//     groupNo: number;
+//   }[];
+// }
+const addTeams = async (req, res) => {
+  const { teams } = req.body;
+  if (!teams) {
+    return res.status(400).send("No teams provided");
+  }
+
+  const teamNames = new Map();
+  const groupNumbers = new Map();
+  for (const team of teams) {
+    teamNames.set(team.name, 1);
+
+    const currGroupVal = groupNumbers.get(team.groupNo);
+    groupNumbers.set(team.groupNo, currGroupVal ? currGroupVal + 1 : 1);
+  }
+
+  // Check for duplicate team names
+  if (teamNames.size < teams.length) {
+    return res.status(400).send("Teams cannot have the same names");
+  }
+
+  // Check if there are correct number of groups
+  if (groupNumbers.size !== NUMBER_OF_GROUPS) {
+    return res.status(400).send(`There must be ${NUMBER_OF_GROUPS} groups`);
+  }
+
+  // Check if there are correct number of teams per group
+  for (const val of groupNumbers.values()) {
+    if (val !== NUMBER_OF_TEAMS_PER_GROUP) {
+      return res
+        .status(400)
+        .send(`Each group must have ${NUMBER_OF_TEAMS_PER_GROUP} teams`);
+    }
+  }
+
+  // Add groups
+  for (const groupNo of groupNumbers.keys()) {
+    await addGroup(groupNo);
+  }
+
+  // Add teams
+  for (const team of teams) {
+    await addTeam(team);
+  }
+
+  const groups = await Group.find();
+  return res.status(200).json(groups);
 };
 
 // helper function to recalculate and update team points
@@ -104,7 +146,7 @@ const clearTeams = () => Team.deleteMany({});
 
 module.exports = {
   getAllTeams,
-  addTeam,
+  addTeams,
   addMatch,
   clearTeams,
 };

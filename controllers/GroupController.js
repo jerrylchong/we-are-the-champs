@@ -1,5 +1,4 @@
 const { Group } = require("../models/Group");
-const { NUMBER_OF_GROUPS } = require("../utils/constants");
 const { arrangeStandings } = require("../utils/metrics");
 
 // helper function to update group standings
@@ -14,16 +13,21 @@ const updateGroupStandings = async (groupNo, team) => {
   }
 
   // check if team is already in group
-  const teams = [...group.teams];
-  const teamIndex = teams.findIndex((t) => t.name === team.name);
-  if (teamIndex >= 0) {
-    teams[teamIndex] = team;
+  if (group.teams) {
+    const teams = [...group.teams];
+    const teamIndex = teams.findIndex((t) => t.name === team.name);
+    if (teamIndex >= 0) {
+      teams[teamIndex] = team;
+    } else {
+      teams.push(team);
+    }
+
+    teams.sort(arrangeStandings);
+    group.teams = teams;
   } else {
-    teams.push(team);
+    group.teams = [team];
   }
 
-  teams.sort(arrangeStandings);
-  group.teams = teams;
   await group.save();
 };
 
@@ -35,19 +39,7 @@ const getGroups = async (req, res) => {
 
 // helper function to create group
 const addGroup = async (groupNo) => {
-  const existing = await Group.findOne({ number: groupNo });
-  if (existing) {
-    // if there already exists a group with groupNo, return the group
-    return existing;
-  }
-
-  const groups = await Group.find();
-  if (groups.length >= NUMBER_OF_GROUPS) {
-    // if the group limit is full, return null
-    return null;
-  }
-
-  const newGroup = new Group({ number: groupNo });
+  const newGroup = new Group({ number: groupNo, teams: [] });
   const addedGroup = await newGroup.save();
   return addedGroup;
 };

@@ -7,7 +7,7 @@ const GroupSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  teams: [TeamSchema],
+  teams: [TeamSchema] | null,
 });
 
 const Group = mongoose.model("Group", GroupSchema);
