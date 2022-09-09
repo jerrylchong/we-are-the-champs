@@ -1,5 +1,8 @@
 # We are the champions backend
 
+## Link to frontend repository
+https://github.com/jerrylchong/we-are-the-champs-frontend
+
 ## Steps to run
 
 ### Prerequisites
