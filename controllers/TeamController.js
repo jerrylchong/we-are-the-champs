@@ -110,10 +110,8 @@ const addMatch = async (match) => {
   const secondTeam = await Team.findOne({ name: team2 });
 
   // update teams' total goals
-  console.log("first before", firstTeam.goals, team1Goals);
   firstTeam.goals += team1Goals;
   secondTeam.goals += team2Goals;
-  console.log("first after", firstTeam.goals, team1Goals);
 
   // update teams' points and WDL record
   if (team1Goals > team2Goals) {
